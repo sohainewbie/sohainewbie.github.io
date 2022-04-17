@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- Author : sohai | this code generate by python script -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="An software engineer guy who loves write code and learn about security & reversing">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Hello World">
+    <meta property="og:url" content="https://sohainewbie.github.io">
+    <meta property="og:site_name" content="">
+    <meta property="og:description" content="An software engineer guy who loves write code and learn about security & reversing">
+    <meta property="og:locale" content="en">
+    <meta name="twitter:title" content="Hello World">
+    <meta name="twitter:description" content="An software engineer guy who loves write code and learn about security & reversing">
+    <!-- title -->
+    <title>Reversing & Emulation Smart Contract</title>
+    <!-- styles -->
+    <link rel="stylesheet" href="../assets/css/style.css">
+
+    <style type="text/css">
+        .code-container{
+            background-color: #2f1111;
+            height: 175px;
+            width: 869px;
+            margin-left: 84px;
+        }
+        .code-text{
+            color: #c2af46;
+            margin-left: -68px;
+        }
+    </style>
+</head>
+
+<body>
+  <div >
+    <pre>
+    <span class="style2">  ___ ___                                 .__</span>              
+    <span class="style8"> /   |   \   ____ ___  ___         _______|__| ____   ____ </span> 
+    <span class="style5">/    ~    \_/ __ \\  \/  /  ______ \___   /  |/    \_/ __ \ </span>
+    <span class="style3">\    Y    /\  ___/ >    <  /_____/  /    /|  |   |  \  ___/ </span>
+    <span class="style4"> \___|_  /  \___  >__/\_ \         /_____ \__|___|  /\___  ></span>
+    <span class="style6">       \/       \/      \/               \/       \/     \/ </span>
+    </pre>    
+    <div class="content-article">
+        <pre>
+            Kali ini saya mau share, bagaimana membuat smart contract pada blockchain Ethereum, 
+            kemudian reverse EVM bytecode & simulasi mengunakan Qiling.
+
+            Saya buatkan menjadi beberapa part:
+            1. <a href="#create-smart-contract">Deploy Smart Contract</a>
+            2. <a href="#reverse-smart-contract">Reversing Smart Contract</a>
+            3. <a href="#simulate-smart-contract">Simulate Smart Contract</a>
+
+            <h1 id="create-smart-contract" style="width: 238px;margin-left: 87px;">Deploy Smart Contract</h1>
+
+            Sebelum memulai, mari kita coba untuk build smart contract nya mengunakan solidity.
+            bisa buka browser di halaman <span>https://remix.ethereum.org/</span>
+
+            <img src="../images/reversing-smartcontract/1.png" style="width: 862px;height: 400px;">
+            
+            kalian juga bisa, mengubah nama workspace nya , disini saya membuat smartcontract dengan nama Hello.
+            Kemudian di bagian folder contracts, bikin file baru misal: hello.sol 
+            masukan <a href="https://gist.github.com/sohainewbie/2f8ca519bc5c115682f31c90cd3f407e" target="_blank">code ini :</a>
+
+            <img src="../images/reversing-smartcontract/2.png" style="width: 862px;">
+
+            Untuk mengecheck code nya berjalan dengan baik & benar, bisa mengunakan compile.
+            Jangan lupa sesuaikan compailer solidity nya dengan versi 0.6.0 jg.
+            Jika ouput nya seperti ini, dan tidak ada error maka code yang ditulis sudah betul.
+
+            <img src="../images/reversing-smartcontract/3.png" style="width: 862px;">
+
+            Setiap kali kita membuild smart contract kita membutuhkan ETH sebagai gas feenya.
+            berhubung kita bikin untuk pembelajaran bisa mengunakan versi testnet, dengan begitu kita tidak perlu mengeluarkan ETH betulan.
+            
+            Buat dulu Wallet ethereum nya bisa mengunakan Metamask, kemudian set networknya menjadi Ropsten Test Network.
+            
+            <img src="../images/reversing-smartcontract/4.png" style="width: 220px;">
+
+            Kemudian, set ENVIRONMENT menjadi Injected Web3 kemudian click <span>DEPLOY</span>
+
+            <img id="deploy" src="../images/reversing-smartcontract/5.png" style="width: 862px">
+
+            Setelah di deploy kontraknya, bisa check transaksinya disini <a href="https://ropsten.etherscan.io/tx/0xcb49a080e18347c61b47e63c626040a69e2bbfa6e8cebc5505afbb405f775a1d" target="_blank">0xcb49a080e18347c61b47e63c626040a69e2bbfa6e8cebc5505afbb405f775a1d</a>
+
+            <img src="../images/reversing-smartcontract/6.png" style="width: 862px">
+
+            Pada bagian <span>Input Data</span> terdapat EVM bytecode (Bahasa mesin tingkat VM). Kita dapat membayangkan kode tingkat ini tentu tidak 
+            untuk dibaca manusia sama dengan kode mesin tingkat rendah. Itu dapat dikompilasi dengan bahasa EVM tingkat tinggi. 
+
+            <h1 id="reverse-smart-contract" style="width: 245px;margin-left: 87px;">Reverse Smart Contract</h1>
+
+            Setelah kita berhasil depploy kontrak <span>Hello</span>, Bytecode kontraknya bisa di check di address ini <a href="https://ropsten.etherscan.io/address/0xfcfabb546bcf515c4f518b3e5f44f7838d781514#code" target="_blank">0xfcfabb546bcf515c4f518b3e5f44f7838d781514</a>
+
+            <img src="../images/reversing-smartcontract/7.png" style="width: 862px">
+
+            Untuk membaca langsung EVM bytecode sangatlah sulit, oleh karena itu ada beberapa dekompiler, yang bisa kita gunakan salah satunya 
+            adalah <a href="https://github.com/palkeo/panoramix" target="_blank">panoramix</a>.Dengan decompiler ini akan mengubah bytecode menjadi psudocode python.
+
+            jalankan command <span>panoramix 0x608060405234801561001057600080fd...</span>
+
+            <img src="../images/reversing-smartcontract/8.png" style="width: 862px">
+
+
+           Pada gambar tersebut terdapat 3 objek:
+           1. kontrak <span>storage</span>
+           2. fungsi <span>_fallback</span>, fungsi ini di eksekusi ketika contrak di panggil dengan fungsi signature yang tidak di defined pada kode.
+           3. fungsi <span>unknown5dbb8d50</span> akan di ekekusi ketika <span>0x5dbb8d50</span> signature di panggil, 
+              dan bisa kita pastikan fungsi tsb adalah <span>setFullname</span> setelah menjadi bytecode.
+
+           bisa kalian lihat fungsi constructor tidak terbaca karena ketika kita deploy 
+           kontrak nya, fungsi constructor sudah di panggil pertama kali sebelum di <a href="#deploy">deploy</a> dan juga kalian bisa check dibagian <a href="https://ropsten.etherscan.io/tx/0xcb49a080e18347c61b47e63c626040a69e2bbfa6e8cebc5505afbb405f775a1d#statechange" target="_blank">statechange</a>
+           
+           <img src="../images/reversing-smartcontract/9.png" style="width: 862px">
+           
+           <h1 id="simulate-smart-contract" style="width: 259px;margin-left: 87px;">Simulate Smart Contract</h1>
+
+           Untuk mensimulasikan kali ini saya mengunakan framework python bernama <a href="https://docs.qiling.io/en/latest/evm/" target="_blank">Qiling</a>
+           dengan bantuan Qiling kita bisa mensimulasikan EVM dengan mudah.
+
+           Bikin file python, source code nya bisa di check disini <a href="https://gist.github.com/sohainewbie/f0e257220323d7ab4fe1fb7d9ab711cc" target="_blank">hello.py</a>
+
+           <!-- <img src="../images/reversing-smartcontract/10.png" style="width: 862px"> -->
+
+           mari kita bahas potongan kodenya, barisan kode ini kita import library qiling.
+
+           <img src="../images/reversing-smartcontract/10.png" style="width: 862px">
+
+           barisan kode ini, meload bytecode smart contract <span>hello</span> untuk mengunakan arch tipe <span>Ethereum Virtual Machine(EVM)</span>
+           
+           <img src="../images/reversing-smartcontract/11.png" style="width: 862px">
+
+           barisan kode ini, kita membuat wallet & set balance ke akun tsb, serta build smart contract nya.
+           Kemudian di print addressnya.
+
+           <img src="../images/reversing-smartcontract/12.png" style="width: 862px">
+
+           barisan kode ini, kita mencoba untuk nge call fungsi <span>0x5dbb8d50</span> dengan mengirimkan parameter "<span> KucingLiar</span>"
+           kemudian di print outputnya.
+           <img src="../images/reversing-smartcontract/13.png" style="width: 862px">
+
+           Jika kita ekekusi hasilnya seperti ini:
+           <img src="../images/reversing-smartcontract/14.png" style="width: 862px">
+
+
+           Kesimpulannya, kita bisa ber interaksi langsung dengan EVM bytecode mengunkan Qiling 
+           dan ini hanya berupa contoh simple, next time mungkin bisa saya share lagi kegunaan qiling.
+           Terimakasih sudah membaca.
+        </pre>
+    </div>
+  </div>
+
+</br>
+  <footer id="footer">
+    <div class="footer-left">
+      Copyright &copy; 2019 sohainewbie
+    </div>
+  </footer>
+
+</body>
+</html>
