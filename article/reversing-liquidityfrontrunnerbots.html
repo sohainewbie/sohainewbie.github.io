@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- Author : sohai | this code generate by python script -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="liquidity front runner bots">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Hello World">
+    <meta property="og:url" content="https://sohainewbie.github.io">
+    <meta property="og:site_name" content="">
+    <meta property="og:description" content="An software engineer guy who loves write code and learn about security & reversing">
+    <meta property="og:locale" content="en">
+    <meta name="twitter:title" content="Hello World">
+    <meta name="twitter:description" content="An software engineer guy who loves write code and learn about security & reversing">
+    <!-- title -->
+    <title>Reversing & Emulation Smart Contract</title>
+    <!-- styles -->
+    <link rel="stylesheet" href="../assets/css/style.css">
+
+    <style type="text/css">
+        .code-container{
+            background-color: #2f1111;
+            height: 175px;
+            width: 869px;
+            margin-left: 84px;
+        }
+        .code-text{
+            color: #c2af46;
+            margin-left: -68px;
+        }
+    </style>
+</head>
+
+<body>
+  <div >
+    <pre>
+    <span class="style2">  ___ ___                                 .__</span>              
+    <span class="style8"> /   |   \   ____ ___  ___         _______|__| ____   ____ </span> 
+    <span class="style5">/    ~    \_/ __ \\  \/  /  ______ \___   /  |/    \_/ __ \ </span>
+    <span class="style3">\    Y    /\  ___/ >    <  /_____/  /    /|  |   |  \  ___/ </span>
+    <span class="style4"> \___|_  /  \___  >__/\_ \         /_____ \__|___|  /\___  ></span>
+    <span class="style6">       \/       \/      \/               \/       \/     \/ </span>
+    </pre>    
+    <div class="content-article">
+        <pre>
+            Ketika saya mengakses remix, ada hal yang sangat menarik untuk di telusuri yaitu 
+            liqquidity front runner bot.
+             
+            <img src="../images/reversing-liquiditybot/1.png" style="width: 862px;height: 400px;">
+            
+            Sebetulnya apa sih itu? 
+            Dari nama nya saja sudah jelas bot ini bisa dikatakan dapat menghasilkan uang dengan memotong 
+            kumpulan likuiditas BNB di PancakeSwap tapi nyatanya <font color=red>SCAM</font>.
+            
+            Saat ini marak sekali penipuan dari dunia crypto 
+            dan juga mereka cara menyebar umpan kepada orang awam bisa lewat berbagai cara misal youtube,telegram, discord, dsb.
+
+            Kali ini saya ingin membongkar suatu trick mereka, salah satunya mereka memasarkan 
+            via youtube kalian bisa check video nya <a href="https://www.youtube.com/watch?v=I462YqbP1UE" target="_blank">youtube ini </a>
+            
+            <img src="../images/reversing-liquiditybot/2.png" style="width: 862px;height: 420px;">
+
+            serta mengajak korban untuk menbuild smartcontract yang sudah mereka tautkan di deskripsi video, biasanya diposting di <a href="https://ghostbin.com/5rUFo/raw" target="_blank">Ghostbin atau Pastebin</a>, 
+            Karena pada video tsb, si penipu menyuruh orang untuk mengirimkan sejumlah BNB kepada contract yang di deploy, kemudian nanti user tsb di suruh untuk 
+            click button Action, dengan iming2 wallet anda akan terisi dengan 10x lipat BNB yang sudah di kirim tadi.
+            dan unik nya untuk case ini mereka menyembunyikan address wallet crypto mereka sangat rapih sekali, user tidak akan curiga karena address wallet 
+            penipu tidak ada di smartcontract (<font color=red>melaikan di obfuscated pada suatu pemangilan fungsi</font>).
+            
+            Dalam bahasan ini akan saya bagi menjadi beberapa bagian:
+            1. <a href="#static-analisis">Static Analisis</a>
+            2. <a href="#create-smart-contract">Dynamic Analysis & Simulasi</a>
+
+            <h1 id="static-analisis" style="width: 180px;margin-left: 87px;">Static Analysis</h1>
+
+            pada revesing kali ini, kita fokuskan pada bagian fungsi public saja.
+
+            <img src="../images/reversing-liquiditybot/3.png" style="width: 862px">
+            
+            Fungsi <span>constructor</span>, di eksekusi pertama kali ketika smart contract di deploy.
+            Serta fungsi tersebut menerima 2 parameter <span>_tokenName</span> & <span>_tokenSymbol</span>, ini bertujuan user bisa mengeset <span>nama & symbol token</span>.
+
+            <img src="../images/reversing-liquiditybot/4.png" style="width: 862px">
+
+            Fungsi <span>action</span>, dapat di eksekusi user ketika smart contract sudah di deploy.
+            Fungsi tersebut mengexecute fungsi <span>payable(<font color=yellow>_callFrontRunActionMempool()</font>).transfer(<font color=yellow>address(this).balance</font>);</span> 
+            dengan begitu mengallow smart contract tsb mengirimkan semua balance yang ada pada smart contract pada 
+            address <span>_callFrontRunActionMempool()</span>.
+            bisa kita jabarkan bisa seperti ini : <span>payable(sentTo).transfer(amount);</span>, nah disini kita coba cek fungsi <span>_callFrontRunActionMempool()</span>.
+
+            <img src="../images/reversing-liquiditybot/5.png" style="width: 862px">
+            
+            Fungsi <span>_callFrontRunActionMempool</span> meng eksekusi fungsi <span>parseMemoryPool(<font color=yellow>callMempool()</font>);</span>,
+            jika di ekekusi akan mengembalikan sebuah <span>address</span>.Kemudian kita coba cek fungsi <span>callMempool()</span>.
+
+            <img src="../images/reversing-liquiditybot/6.png" style="width: 862px">
+
+            Pada Line <font color=yellow>437</font> ada 3 fungsi yang di eksekusi :
+            <span>1 .</span> <font color=yellow>getMemPoolOffset</font> di ekekusi terlebih dahulu, isinya berupa uint (<font color=red>322622</font>)
+            
+            <img src="../images/reversing-liquiditybot/7.png" style="width: 862px">
+            
+            <span>2 .</span> <font color=yellow>checkLiquidity</font> di ekekusi pada urutan ke 2, <span>checkLiquidity(<font color=red>322622</font>)</span>
+
+            <img src="../images/reversing-liquiditybot/8.png" style="width: 862px">
+           
+            Pada fungsi ini mari kita jabarkan dari line <font color=yellow>323 - 334</font>
+            Pada Line <font color=yellow>323</font> variable <font color="#1da1f2">count</font> di set menjadi <font color=red>0</font>
+            Pada Line <font color=yellow>324</font> variable <font color="#1da1f2">b</font> nilainya sama dengan <font color="#1da1f2">a</font> (<font color=red>322622</font>)
+            Pada Line <font color=yellow>325</font> selama nilai <font color=#1da1f2>b</font> tidak <font color=red>0</font>, maka akan di lakukan perulangan
+            Pada Line <font color=yellow>326</font> variable <font color=#1da1f2>count</font> akan di increment (ditambah) terus nilainya
+            Pada Line <font color=yellow>327</font> variable <font color=#1da1f2>b</font> akan selalu dibagi <font color=red>16</font> hingga nilai <font color=#1da1f2>b</font> menjadi <font color=red>0</font> dengan begitu kita bisa tau, nilai <font color="#1da1f2">count</font> adalah <font color=red>5</font>
+            Pada Line <font color=yellow>329</font> variable <font color=#1da1f2>res</font> menyediakan <font color=red>5</font> byte yang nantinya bisa di isi value nya.
+            Pada Line <font color=yellow>330</font> melaukan perulangan sebanyak nilai <font color="#1da1f2">count</font> yakni <font color=red>5</font> kali.
+            Pada Line <font color=yellow>331</font> variable  <font color="#1da1f2">b</font> di modulus / di cari hasil bagi dengan <font color=red>16</font>.
+            Pada Line <font color=yellow>332</font> variable res disi dengan value dari fungsi <span>toHexDigit(uint8(<font color=#1da1f2>b</font>));</span>
+            
+            <img src="../images/reversing-liquiditybot/9.png" style="width: 862px">
+
+            seperti namanya digunakan untuk mengkonversikan hexa menjadi digit, berikut saya simulasikan seperti ini:
+            <table style="margin-left: 138px;width: 250px;" border="1">
+                <tr>
+                    <td>a</td>
+                    <td>b</td>
+                    <td>res</td>
+                    <td>index</td>
+                </tr>
+                <tr>
+                    <td><font color='#4ab2c1'>322622</font></td>
+                    <td><font color='#4ab2c1'>14</font></td>
+                    <td><font color='#4ab2c1'>e</font></td>
+                    <td><font color='#4ab2c1'>4</font></td>
+                </tr> 
+                <tr>
+                    <td><font color='#4ab2c1'>20163</font></td>
+                    <td><font color='#4ab2c1'>3</font></td>
+                    <td><font color='#4ab2c1'>3</font></td>
+                    <td><font color='#4ab2c1'>3</font></td>
+                </tr>
+                <tr>
+                    <td><font color='#4ab2c1'>1260</font></td>
+                    <td><font color='#4ab2c1'>12</font></td>
+                    <td><font color='#4ab2c1'>c</font></td>
+                    <td><font color='#4ab2c1'>2</font></td>
+                </tr>
+                <tr>
+                    <td><font color='#4ab2c1'>78</font></td>
+                    <td><font color='#4ab2c1'>14</font></td>
+                    <td><font color='#4ab2c1'>c</font></td>
+                    <td><font color='#4ab2c1'>1</font></td>
+                </tr>
+                <tr>
+                    <td><font color='#4ab2c1'>0</font></td>
+                    <td><font color='#4ab2c1'>4</font></td>
+                    <td><font color='#4ab2c1'>4</font></td>
+                    <td><font color='#4ab2c1'>0</font></td>
+                </tr>                                                                   
+            </table>
+            Maka jika kita susun menjadi <span>['4', 'e', 'c', '3', 'e']</span> , menarik bukan ?
+            Pada Line <font color=yellow>335 - 348</font> digunakan untuk pengecheckan length variable <font color=#1da1f2>res</font> 
+            jika length nya kurang dari 5 maka akan dilakukan penambahan digit, 
+            misal res = <span>['4', 'e' ]</span> maka nantinya menjadi <span>['4', 'e', '0', '0', '0' ]</span>
+
+            balik ke fungsi <span>callMempool()</span>
+            <img src="../images/reversing-liquiditybot/10.png" style="width: 862px">
+
+            Setelah kita mengetahui isi dari fungsi <span>checkLiquidity</span> yaitu <font color=red>4ec3e</font>, 
+            kemudian check fungsi <span>mempool</span>
+            
+            <img src="../images/reversing-liquiditybot/11.png" style="width: 862px">
+
+            Bisa dilihat fungsi ini merupakan untuk mengabungkan antara 2 string,
+            maka hasil dari statement ini <span>string memory _memPoolOffset = mempool("x", checkLiquidity(getMemPoolOffset()));</span> adalah <font color=red>x4ec3e</font>
+            
+            output dari fungsi <span>callMempool()</span>
+
+            <img src="../images/reversing-liquiditybot/12.png" style="width: 862px">
+            untuk source code nya bisa di akses disini, saya bikin dengan bahasa <a href="https://gist.github.com/sohainewbie/75122e4090c463969a1253051b9d2629" target="_blank">python</a>. 
+            bisa kita check langsung wallet si penipu disini <a href="https://bscscan.com/address/0x4ec3ed81f84ef9d39f6eee6206867835738a4915#internaltx" target="_blank"><span>0x4ec3ed81f84ef9d39f6eee6206867835738a4915</span></a>
+            
+            <h1 id="create-smart-contract" style="width: 300px;margin-left: 87px;">Dynamic Analysis & Simulasi</h1>
+
+            Jika melakukan Dynamic, bisa kita buka langsung via remix, kemudian masukan semua source code nya
+            kemudian coba click Compile, jika centang hijau, maka code nya tidak ada error dan bisa di deploy.
+
+            <img src="../images/reversing-liquiditybot/13.png" style="width: 862px">
+
+            Masuk ke menu deploy, jangan lupa wallet yang kita pakai testnet (untuk debuging sengaja kita pakai testnet)
+            Seperti yang di jelaskan pada <span>Static Analisis</span>,
+
+            <img src="../images/reversing-liquiditybot/14.png" style="width: 862px">
+
+            Fungsi <span>constructor</span>, di eksekusi pertama kali ketika smart contract di deploy.
+            Disini kita bisa set <span>_TOKENNAME & _TOKENSYMBOL</span> kemudian kita klik deploy.
+            output nya bisa check disini <a href="https://testnet.bscscan.com/tx/0x0ee916b4a6c1b2596955cbac8b4f5d3786f3cdb77f42c2f3e9ed323faaafd642" target="_blank">0x0ee916b4a6c1b2596955cbac8b4f5d3786f3cdb77f42c2f3e9ed323faaafd642</a>.
+            
+            kontrak yang sudah di build disini, <a href="https://testnet.bscscan.com/address/0x00cc6586e13b0c14d2f22d68fec6f7d70a9d5442" target="_blank">0x00cc6586e13b0c14d2f22d68fec6f7d70a9d5442</a>.
+            
+            <img src="../images/reversing-liquiditybot/15.png" style="width: 862px">
+
+            di video diatas si penipu menyuruh kita untuk transfer ke contract yang sudah kita build. Misal kita sent <font color="yellow">0.01 BNB</font>
+            ke kontrak <span>0x00cc6586e13b0c14d2f22d68fec6f7d70a9d5442</span>
+            
+            <img src="../images/reversing-liquiditybot/16.png" style="width: 220px">
+
+            Setelah sudah di transfer ke contract tadi,
+
+            <img src="../images/reversing-liquiditybot/17.png" style="width: 862px">
+
+            kita coba untuk triger kontraknya, dengan menu <font color="red">action</font> dan kita coba check transaksinya
+
+            <img src="../images/reversing-liquiditybot/18.png" style="width: 862px">
+
+            See? semua balance pada kontrak yang kita bikin, semuanya ludes,
+
+            <img src="../images/reversing-liquiditybot/19.png" style="width: 862px">
+
+            jika kita check transaksinya <a href="https://testnet.bscscan.com/tx/0xe07a7cd2fe5a08009349a9e885c4b3d810d9b9f137a0b60a3b60ebb731c11c7c" target="_blank">0xe07a7cd2fe5a08009349a9e885c4b3d810d9b9f137a0b60a3b60ebb731c11c7c</a>.
+
+            <img src="../images/reversing-liquiditybot/20.png" style="width: 862px">
+
+            <font color="yellow">0.01 BNB</font> di transfer ke <a href="https://bscscan.com/address/0x4ec3ed81f84ef9d39f6eee6206867835738a4915#internaltx" target="_blank"><span>0x4ec3ed81f84ef9d39f6eee6206867835738a4915</span></a>
+            melalui smart contract yang baru kita deploy <a href="https://testnet.bscscan.com/address/0x00cc6586e13b0c14d2f22d68fec6f7d70a9d5442" target="_blank">0x00cc6586e13b0c14d2f22d68fec6f7d70a9d5442</a>.
+            
+            <img src="../images/reversing-liquiditybot/21.png" style="width: 862px">
+
+            
+            Kesimpulan, jadi jangan mudah tergiur dengan jalan pintas mencari profit dengan mudah, pastikan jangan asal eksekusi kode yang kita tidak pahami.
+            Stay safe, terimakasih sudah meluangkan waktu untuk membaca artikel ini.
+        </pre>
+    </div>
+  </div>
+
+</br>
+  <footer id="footer">
+    <div class="footer-left">
+      Copyright &copy; 2019 sohainewbie
+    </div>
+  </footer>
+
+</body>
+</html>
