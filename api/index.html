@@ -1,1 +1,24 @@
-<!-- testing -->
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+$(document).ready(function(){
+//   $("button").click(function(){
+    let params = (new URL(document.location)).searchParams;
+    let nft_id = params.get("nft_id");
+    $.get(`http://68.183.190.243:8080/?nft_id=${nft_id}`, function(data, status){
+        document.getElementById("nft_id").innerHTML = `ID : ${nft_id}`;
+        document.getElementById("response").innerHTML = JSON.stringify(data, null, 2);
+    });
+//   });
+});
+</script>
+</head>
+<body>
+<br><br>
+<span id="nft_id"></span><br>
+<textarea id="response" style="width: 672px; height: 570px;">
+</textarea>
+</body>
+</html>
